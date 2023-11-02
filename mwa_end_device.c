@@ -1136,8 +1136,6 @@ static void App_MyTransmitData(void)
 {
     uint16_t longitud = 1;
 
-
-
     /* Limit data transfer size */
     if( longitud > mMaxKeysToReceive_c )
     {
@@ -1248,6 +1246,8 @@ static void    MyTimer(void *pData)
    /* Just to avoid the compiler warning */
   (void)pData;
 
+  TMR_StopTimer(EverySecond_Timer);
+
   static uint8_t segundos = 1;
 
 
@@ -1297,8 +1297,6 @@ static void    MyTimer(void *pData)
 	  if(cont == 5){
 		  cont = 0;
 	  }
-
-
 }
 
 /*****************************************************************************
@@ -1323,13 +1321,14 @@ static void App_HandleKeys
 
 
     case gKBD_EventSW1_c:
-    	cont = 0;
+    	cont = 2;
     	MyTimer(&cont);
     	App_MyTransmitData();
 
 
+
     case gKBD_EventSW2_c:
-    	cont = 2;
+    	cont = 0;
     	MyTimer(&cont);
     	App_MyTransmitData();
 
