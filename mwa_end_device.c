@@ -321,6 +321,7 @@ void App_init( void )
     /* Initialize the MAC 802.15.4 extended address */
     Mac_SetExtendedAddress( (uint8_t*)&mExtendedAddress, macInstance );
     
+
     mTimer_c = TMR_AllocateTimer();
     EverySecond_Timer = TMR_AllocateTimer();
     /* register keyboard callback function */
@@ -413,7 +414,8 @@ void AppThread(osaTaskParam_t argument)
         {
         case stateInit:
             /* Print a welcome message to the UART */
-            Serial_Print(interfaceId, "MyWirelessApp Demo End Device application is initialized and ready.\n\r", gAllowToBlock_d);  
+            Serial_Print(interfaceId, "MyWirelessApp Demo End Device application is initialized and ready.\n\r", gAllowToBlock_d);
+            msg.msgData.setReq.pibAttribute = (gMPibShortAddress_c | gMPibRxOnWhenIdle_c);
 #if gNvmTestActive_d 
             if( ev & gAppEvtPressedRestoreNvmBut_c )
             {
@@ -860,7 +862,7 @@ static uint8_t App_SendAssociateRequest(void)
 #endif
 
     /* We want the coordinator to assign a short address to us. */
-    pAssocReq->capabilityInfo     = gCapInfoAllocAddr_c;
+    pAssocReq->capabilityInfo     = gCapInfoAllocAddr_c | gCapInfoRxWhenIdle_c | gCapInfoDeviceFfd_c;
       
     /* Send the Associate Request to the MLME. */
     if(NWK_MLME_SapHandler( pMsg, macInstance ) == gSuccess_c)
@@ -1135,6 +1137,7 @@ static void App_TransmitUartData(void)
 static void App_MyTransmitData(void)
 {
     uint16_t longitud = 1;
+    char a='a';
 
     /* Limit data transfer size */
     if( longitud > mMaxKeysToReceive_c )
@@ -1161,7 +1164,7 @@ static void App_MyTransmitData(void)
         mpPacket->msgData.dataReq.pMsdu = (uint8_t*)(&mpPacket->msgData.dataReq.pMsdu) +
                                           sizeof(mpPacket->msgData.dataReq.pMsdu);
 
-        mpPacket->msgData.dataReq.pMsdu = &cont;
+        mpPacket->msgData.dataReq.pMsdu = &a;
         /* Create the header using coordinator information gained during
         the scan procedure. Also use the short address we were assigned
         by the coordinator during association. */
@@ -1323,14 +1326,14 @@ static void App_HandleKeys
     case gKBD_EventSW1_c:
     	cont = 2;
     	MyTimer(&cont);
-    	App_MyTransmitData();
+    	//App_MyTransmitData();
 
 
 
     case gKBD_EventSW2_c:
     	cont = 0;
     	MyTimer(&cont);
-    	App_MyTransmitData();
+    	//App_MyTransmitData();
 
 
 
