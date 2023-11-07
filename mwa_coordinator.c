@@ -691,6 +691,29 @@ static uint8_t App_StartCoordinator( uint8_t appInstance )
 *   errorAllocFailed:      A message buffer could not be allocated.
 *
 ******************************************************************************/
+#define DEVICES_MAX 5
+typedef struct associated_devices
+{
+    uint16_t                short_Addr;
+    uint64_t                extended_Addr;
+    uint8_t 				RxWhenIdle_on;
+    uint8_t					Device_Type;
+} Devices_associated_t;
+
+typedef enum
+{
+    RFD            = 0x01,
+    FFD           = 0x02,
+} Device_type_t;
+typedef enum
+{
+    OFF            = 0x00,
+    ON           = 0x01,
+} Rx_while_idle_t;
+Devices_associated_t Devices[DEVICES_MAX];
+int devices_associated=0;
+uint16_t new_short_adress=0x0001;
+
 static uint8_t App_SendAssociateResponse(nwkMessage_t *pMsgIn, uint8_t appInstance)
 {
   mlmeMessage_t *pMsg;
@@ -713,17 +736,66 @@ static uint8_t App_SendAssociateResponse(nwkMessage_t *pMsgIn, uint8_t appInstan
        different short addresses. However, if a device do not want to use
        short addresses at all in the PAN, a short address of 0xFFFE must
        be assigned to it. */
-    if(pMsgIn->msgData.associateInd.capabilityInfo & gCapInfoAllocAddr_c)
-    {
-      /* Assign a unique short address less than 0xfffe if the device requests so. */
-      pAssocRes->assocShortAddress = 0x0001;
-    }
-    else
-    {
-      /* A short address of 0xfffe means that the device is granted access to
-         the PAN (Associate successful) but that long addressing is used.*/
-      pAssocRes->assocShortAddress = 0xFFFE;
-    }
+    int associated=0;
+    int asso_num=0;
+      for(int i=0; i<DEVICES_MAX;i++){
+
+    	  if(  Devices[i].extended_Addr == (pMsgIn->msgData.associateInd.deviceAddress)){
+    		  associated=1;
+    		  asso_num=i;
+
+    	  }
+
+
+      }
+      if(!associated){
+
+    	  if(pMsgIn->msgData.associateInd.capabilityInfo & gCapInfoAllocAddr_c)
+    	  {
+    	  Devices[devices_associated].extended_Addr=(pMsgIn->msgData.associateInd.deviceAddress);
+    	  //Devices[devices_associated].short_Addr=(pMsgIn->msgData.associateCnf.assocShortAddress);
+    	  Devices[devices_associated].short_Addr=new_short_adress;
+
+		  if(pMsgIn->msgData.associateInd.capabilityInfo &  gCapInfoRxWhenIdle_c )
+		  {
+			  Devices[devices_associated].RxWhenIdle_on= ON;
+		  }
+		  else {
+			  Devices[devices_associated].RxWhenIdle_on= OFF;
+		  }
+		  if(pMsgIn->msgData.associateInd.capabilityInfo &  gCapInfoDeviceFfd_c )
+		  {
+	    	  Devices[devices_associated].Device_Type=FFD;
+		  }
+		  else{
+			  Devices[devices_associated].Device_Type=RFD;
+		  }
+
+    	  associated=0;
+    	  pAssocRes->assocShortAddress = new_short_adress;
+    	  new_short_adress++;
+    	  devices_associated++;
+    	  }
+
+      }
+      else
+      {
+    	  pAssocRes->assocShortAddress =  Devices[asso_num].short_Addr;
+      }
+
+
+
+//    if(pMsgIn->msgData.associateInd.capabilityInfo & gCapInfoAllocAddr_c)
+//    {
+//      /* Assign a unique short address less than 0xfffe if the device requests so. */
+//      pAssocRes->assocShortAddress = 0x0001;
+//    }
+//    else
+//    {
+//      /* A short address of 0xfffe means that the device is granted access to
+//         the PAN (Associate successful) but that long addressing is used.*/
+//      pAssocRes->assocShortAddress = 0xFFFE;
+//    }
     /* Get the 64 bit address of the device requesting association. */
     FLib_MemCpy(&pAssocRes->deviceAddress, &pMsgIn->msgData.associateInd.deviceAddress, 8);
     /* Association granted. May also be gPanAtCapacity_c or gPanAccessDenied_c. */
@@ -764,8 +836,11 @@ static uint8_t App_SendAssociateResponse(nwkMessage_t *pMsgIn, uint8_t appInstan
 *   errorNoError:   The message was processed.
 *   errorNoMessage: The message pointer is NULL.
 ******************************************************************************/
+
+
 static uint8_t App_HandleMlmeInput(nwkMessage_t *pMsg, uint8_t appInstance)
 {
+
   if(pMsg == NULL)
     return errorNoMessage;
   
@@ -784,6 +859,9 @@ static uint8_t App_HandleMlmeInput(nwkMessage_t *pMsg, uint8_t appInstance)
   default:
     break;
   }
+
+
+
   return errorNoError;
 }
 
